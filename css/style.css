@@ -2,7 +2,10 @@
 :root {
   --bg: #faf8f5;
   --bg-soft: #f3ede4;
+  --bg-gallery: #E8E0D8;
+  --bg-footer: #2a241d;
   --panel: #ffffff;
+  --white: #ffffff;
   --text: #2b2b2b;
   --text-soft: #55514b;
   --text-warm: #4a3f35;
@@ -306,7 +309,7 @@ h1, h2, h3 { font-family: var(--display); font-weight: 500; margin: 0; }
 
 /* ===== Gallery ===== */
 .gallery {
-  background: #E8E0D8;
+  background: var(--bg-gallery);
   width: 100%;
   padding: clamp(3.5rem, 7vw, 6rem) 0;
 }
@@ -590,7 +593,7 @@ h1, h2, h3 { font-family: var(--display); font-weight: 500; margin: 0; }
 
 /* ===== Footer ===== */
 .footer {
-  background: #2a241d;
+  background: var(--bg-footer);
   color: var(--accent-light);
   padding: clamp(3rem, 7vw, 5rem) clamp(1.25rem, 5vw, 3rem);
 }
@@ -623,7 +626,7 @@ h1, h2, h3 { font-family: var(--display); font-weight: 500; margin: 0; }
   font-family: var(--display);
   font-style: italic;
   font-size: clamp(1.3rem, 3vw, 1.9rem);
-  color: #fff;
+  color: var(--white);
   margin: 0 0 1.25rem;
   line-height: 1.4;
 }
@@ -682,7 +685,7 @@ h1, h2, h3 { font-family: var(--display); font-weight: 500; margin: 0; }
   border: 1px solid rgba(255,255,255,0.4);
   border-radius: 50%;
   background: transparent;
-  color: #fff;
+  color: var(--white);
   font-size: 1.3rem;
   line-height: 1;
   cursor: pointer;
