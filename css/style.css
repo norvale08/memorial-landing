@@ -804,7 +804,7 @@ h1, h2, h3 { font-family: var(--display); font-weight: 500; margin: 0; }
   .bio__text { width: 70% !important; padding: 1.5rem !important; }
   .gallery { height: auto !important; min-height: 400px; padding: clamp(2rem, 5vw, 4rem) 0; }
   .timeline { height: auto !important; min-height: 400px; padding: clamp(2rem, 5vw, 4rem) 0; }
-  .memories { height: auto !important; min-height: 400px; padding: clamp(2rem, 5vw, 4rem) 0; }
+  .memories { height: auto !important; min-height: 400px; padding: clamp(2rem, 5vw, 4rem) 0; display: flex; justify-content: center;}
   .legacy { height: auto !important; min-height: 400px; padding: clamp(2rem, 5vw, 4rem) 0; }
   .timeline__row { grid-template-columns: repeat(2, 1fr); gap: 1.75rem 1.25rem; }
   .timeline__row::before { display: none; }
