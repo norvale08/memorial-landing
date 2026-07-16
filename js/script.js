@@ -22,7 +22,7 @@
     AOS.init({
       duration: 900,
       easing: "ease-out-cubic",
-      once: true,
+      once: false, // Changed to false to allow replay
       offset: 80,
       disable: prefersReduced,
     });
@@ -39,16 +39,36 @@
       gsap.registerPlugin(ScrollTrigger);
     }
 
-    // Hero entrance timeline
+    // Hero entrance animation function
     const heroText = [
       ".hero__eyebrow",
       ".hero__name",
       ".hero__dates",
       ".hero__tagline",
     ];
-    const tl = gsap.timeline({ defaults: { ease: "power3.out" } });
-    tl.from(".hero__media", { autoAlpha: 0, scale: 1.05, duration: 1.6 })
-      .from(heroText, { autoAlpha: 0, y: 24, duration: 1, stagger: 0.14 }, "-=1.1");
+    
+    function playHeroAnimation() {
+      // Reset to initial state with subtle scale/position only (no opacity)
+      gsap.set(".hero__media", { scale: 1.03, y: 8 });
+      heroText.forEach(el => {
+        gsap.set(el, { opacity: 0, y: 24 });
+      });
+      
+      // Create and play refined animation
+      const tl = gsap.timeline({ defaults: { ease: "power2.out" } });
+      tl.to(".hero__media", { scale: 1, y: 0, duration: 2.5 })
+        .to(heroText, { opacity: 1, y: 0, duration: 1.2, stagger: 0.16 }, "-=2");
+    }
+    
+    // Play on initial load
+    playHeroAnimation();
+    
+    // Replay when scrolling back to hero
+    ScrollTrigger.create({
+      trigger: ".hero",
+      start: "top center",
+      onEnterBack: playHeroAnimation
+    });
 
     // Parallax effect for hero background
     const heroBg = document.querySelector(".hero__bg");
