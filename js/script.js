@@ -97,10 +97,15 @@
     let lastX = 0;
     let lastTime = 0;
     let rafId = null;
+    let autoPlayId = null;
     let autoPlayRafId = null;
     let isAutoPlaying = true;
-    const maxScroll = memoriesRow.scrollWidth - memoriesContent.clientWidth;
-    const autoPlaySpeed = 0.3; // pixels per frame
+    const cardWidth = memoriesRow.querySelector(".memory")?.offsetWidth + 24 || 394; // card width + gap
+    const totalCards = memoriesRow.querySelectorAll(".memory").length;
+    // Calculate maxScroll so the last card's left edge reaches the viewport's left edge
+    // This is: total width of all cards except the last one
+    const maxScroll = (totalCards - 1) * cardWidth;
+    let currentIndex = 0;
 
     memoriesRow.addEventListener("mousedown", (e) => {
       isDown = true;
@@ -114,6 +119,10 @@
       
       // Pause auto-play on user interaction
       isAutoPlaying = false;
+      if (autoPlayId) {
+        clearTimeout(autoPlayId);
+        autoPlayId = null;
+      }
       if (autoPlayRafId) {
         cancelAnimationFrame(autoPlayRafId);
         autoPlayRafId = null;
@@ -133,11 +142,12 @@
         document.body.style.webkitUserSelect = "";
         startMomentum();
         
-        // Resume auto-play after 3 seconds of inactivity
-        setTimeout(() => {
+        // Don't snap to card boundaries - keep exact position
+        // Resume auto-play after 5 seconds of inactivity
+        autoPlayId = setTimeout(() => {
           isAutoPlaying = true;
-          startContinuousAutoPlay();
-        }, 3000);
+          startCardAutoPlay();
+        }, 5000);
       }
     });
 
@@ -160,6 +170,9 @@
       const clampedX = Math.max(-maxScroll, Math.min(0, currentX));
       memoriesRow.style.transform = `translateX(${clampedX}px)`;
       
+      // IMPORTANT: Update currentX to match the actual clamped value
+      currentX = clampedX;
+      
       lastX = x;
       lastTime = currentTime;
     });
@@ -173,6 +186,9 @@
         currentX += velocity * 16;
         const clampedX = Math.max(-maxScroll, Math.min(0, currentX));
         memoriesRow.style.transform = `translateX(${clampedX}px)`;
+        
+        // IMPORTANT: Update currentX to match the actual clamped value
+        currentX = clampedX;
         
         // Stop at bounds
         if (clampedX === 0 || clampedX === -maxScroll) {
@@ -190,33 +206,117 @@
       rafId = requestAnimationFrame(momentumLoop);
     }
 
-    // Continuous auto-play - smooth marquee effect
-    function startContinuousAutoPlay() {
+    // Card-by-card auto-play with pauses for reading
+    function startCardAutoPlay() {
       if (!isAutoPlaying) return;
       
-      function autoPlayLoop() {
-        if (!isAutoPlaying || isDown) return;
+      // Kill any existing GSAP tweens to prevent conflicts
+      gsap.killTweensOf(memoriesRow);
+      
+      // Pause for reading (4 seconds) from current position
+      autoPlayId = setTimeout(() => {
+        if (!isAutoPlaying) return;
         
-        currentX -= autoPlaySpeed;
+        // Read the ACTUAL current position from the DOM - this is the absolute truth
+        const computedStyle = window.getComputedStyle(memoriesRow);
+        const transform = computedStyle.transform;
+        let actualCurrentX = 0;
         
-        // Loop back to start when reaching end
-        if (currentX <= -maxScroll) {
-          currentX = 0;
+        if (transform && transform !== 'none') {
+          const matrix = transform.match(/matrix\(([^)]+)\)/);
+          if (matrix) {
+            const values = matrix[1].split(',').map(parseFloat);
+            actualCurrentX = values[4] || 0;
+          }
         }
         
-        const clampedX = Math.max(-maxScroll, Math.min(0, currentX));
-        memoriesRow.style.transform = `translateX(${clampedX}px)`;
+        // Calculate target position - move left by one card width
+        let targetX = actualCurrentX - cardWidth;
         
-        autoPlayRafId = requestAnimationFrame(autoPlayLoop);
-      }
-      
-      autoPlayRafId = requestAnimationFrame(autoPlayLoop);
+        // If this move would reach or pass the end, snap to exactly -maxScroll
+        if (targetX <= -maxScroll) {
+          targetX = -maxScroll;
+        }
+        
+        // Update currentX to match the DOM value
+        currentX = actualCurrentX;
+        
+        // Use requestAnimationFrame for smooth animation without GSAP conflicts
+        const startTime = performance.now();
+        const duration = 2500; // 2.5 seconds
+        
+        function animateCard(currentTime) {
+          if (!isAutoPlaying || isDown) return;
+          
+          const elapsed = currentTime - startTime;
+          const progress = Math.min(elapsed / duration, 1);
+          
+          // Easing function (power3.inOut equivalent)
+          const ease = progress < 0.5 
+            ? 4 * progress * progress * progress 
+            : 1 - Math.pow(-2 * progress + 2, 3) / 2;
+          
+          const newX = actualCurrentX + (targetX - actualCurrentX) * ease;
+          currentX = newX;
+          memoriesRow.style.transform = `translateX(${newX}px)`;
+          
+          if (progress < 1) {
+            autoPlayRafId = requestAnimationFrame(animateCard);
+          } else {
+            currentX = targetX;
+            
+            // If we've reached the end (last card at left edge), animate back to start
+            if (targetX === -maxScroll) {
+              // Quick return animation to first card
+              const returnStartTime = performance.now();
+              const returnDuration = 1000; // 1 second for quick return
+              const returnStartX = -maxScroll;
+              
+              function animateReturn(currentTime) {
+                if (!isAutoPlaying || isDown) return;
+                
+                const elapsed = currentTime - returnStartTime;
+                const progress = Math.min(elapsed / returnDuration, 1);
+                
+                // Easing function (power2.out for quick return)
+                const ease = 1 - Math.pow(1 - progress, 2);
+                
+                const newX = returnStartX + (0 - returnStartX) * ease;
+                currentX = newX;
+                memoriesRow.style.transform = `translateX(${newX}px)`;
+                
+                if (progress < 1) {
+                  autoPlayRafId = requestAnimationFrame(animateReturn);
+                } else {
+                  currentX = 0;
+                  // Start the normal sliding cycle again
+                  startCardAutoPlay();
+                }
+              }
+              
+              autoPlayRafId = requestAnimationFrame(animateReturn);
+            } else {
+              startCardAutoPlay();
+            }
+          }
+        }
+        
+        autoPlayRafId = requestAnimationFrame(animateCard);
+      }, 4000);
     }
 
     // Start auto-play after initial load
     setTimeout(() => {
       if (isAutoPlaying) {
-        startContinuousAutoPlay();
+        // Sync currentX with actual transform before starting
+        const currentTransform = memoriesRow.style.transform;
+        if (currentTransform) {
+          const currentTranslateX = parseFloat(currentTransform.replace('translateX(', '').replace('px)', ''));
+          if (!isNaN(currentTranslateX)) {
+            currentX = currentTranslateX;
+          }
+        }
+        startCardAutoPlay();
       }
     }, 2000);
   }
