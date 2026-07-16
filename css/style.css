@@ -95,6 +95,10 @@ h1, h2, h3 { font-family: var(--display); font-weight: 500; margin: 0; }
   overflow: hidden;
 }
 
+.memories .section__content {
+  overflow: hidden;
+}
+
 .section__label {
   font-family: var(--sans);
   font-size: 0.7rem;
@@ -531,13 +535,13 @@ h1, h2, h3 { font-family: var(--display); font-weight: 500; margin: 0; }
 .memories__row {
   display: flex;
   gap: 1.5rem;
-  overflow-x: auto;
   cursor: grab;
-  scroll-behavior: smooth;
-  -webkit-overflow-scrolling: touch;
-  scrollbar-width: none;
-  -ms-overflow-style: none;
   padding-bottom: 1rem;
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  will-change: transform;
 }
 .memories__row::-webkit-scrollbar {
   display: none;

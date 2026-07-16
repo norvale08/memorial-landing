@@ -88,75 +88,90 @@
 
   /* ---- Natural slider for memories ---- */
   const memoriesRow = document.querySelector(".memories__row");
-  if (memoriesRow) {
+  const memoriesContent = document.querySelector(".memories .section__content");
+  if (memoriesRow && memoriesContent) {
     let isDown = false;
     let startX;
-    let scrollLeft;
+    let currentX = 0;
     let velocity = 0;
-    let animationId = null;
+    let lastX = 0;
+    let lastTime = 0;
+    let rafId = null;
+    const maxScroll = memoriesRow.scrollWidth - memoriesContent.clientWidth;
 
     memoriesRow.addEventListener("mousedown", (e) => {
       isDown = true;
       memoriesRow.classList.add("is-dragging");
-      startX = e.pageX - memoriesRow.offsetLeft;
-      scrollLeft = memoriesRow.scrollLeft;
+      startX = e.pageX - currentX;
+      lastX = e.pageX;
+      lastTime = performance.now();
       velocity = 0;
-      if (animationId) {
-        cancelAnimationFrame(animationId);
-        animationId = null;
+      document.body.style.userSelect = "none";
+      document.body.style.webkitUserSelect = "none";
+      
+      if (rafId) {
+        cancelAnimationFrame(rafId);
+        rafId = null;
       }
     });
 
-    memoriesRow.addEventListener("mouseleave", () => {
-      isDown = false;
-      memoriesRow.classList.remove("is-dragging");
-      applyMomentum();
+    document.addEventListener("mouseup", () => {
+      if (isDown) {
+        isDown = false;
+        memoriesRow.classList.remove("is-dragging");
+        document.body.style.userSelect = "";
+        document.body.style.webkitUserSelect = "";
+        startMomentum();
+      }
     });
 
-    memoriesRow.addEventListener("mouseup", () => {
-      isDown = false;
-      memoriesRow.classList.remove("is-dragging");
-      applyMomentum();
-    });
-
-    memoriesRow.addEventListener("mousemove", (e) => {
+    document.addEventListener("mousemove", (e) => {
       if (!isDown) return;
       e.preventDefault();
-      const x = e.pageX - memoriesRow.offsetLeft;
-      const walk = (x - startX) * 1.5;
-      const newScrollLeft = scrollLeft - walk;
-      velocity = newScrollLeft - memoriesRow.scrollLeft;
-      memoriesRow.scrollLeft = newScrollLeft;
+      
+      const x = e.pageX;
+      const currentTime = performance.now();
+      const deltaTime = currentTime - lastTime;
+      
+      if (deltaTime > 0) {
+        const deltaX = x - lastX;
+        velocity = deltaX / deltaTime;
+      }
+      
+      currentX = x - startX;
+      
+      // Clamp to bounds
+      const clampedX = Math.max(-maxScroll, Math.min(0, currentX));
+      memoriesRow.style.transform = `translateX(${clampedX}px)`;
+      
+      lastX = x;
+      lastTime = currentTime;
     });
 
-    // Touch support
-    let touchStartX = 0;
-    let touchScrollLeft = 0;
-
-    memoriesRow.addEventListener("touchstart", (e) => {
-      touchStartX = e.touches[0].pageX;
-      touchScrollLeft = memoriesRow.scrollLeft;
-    }, { passive: true });
-
-    memoriesRow.addEventListener("touchmove", (e) => {
-      const touchX = e.touches[0].pageX;
-      const walk = (touchX - touchStartX) * 1.5;
-      memoriesRow.scrollLeft = touchScrollLeft - walk;
-    }, { passive: true });
-
-    function applyMomentum() {
-      if (Math.abs(velocity) < 0.5) return;
+    function startMomentum() {
+      if (Math.abs(velocity) < 0.01) return;
       
-      function step() {
-        memoriesRow.scrollLeft += velocity;
-        velocity *= 0.95;
+      function momentumLoop() {
+        if (isDown) return;
         
-        if (Math.abs(velocity) > 0.5) {
-          animationId = requestAnimationFrame(step);
+        currentX += velocity * 16;
+        const clampedX = Math.max(-maxScroll, Math.min(0, currentX));
+        memoriesRow.style.transform = `translateX(${clampedX}px)`;
+        
+        // Stop at bounds
+        if (clampedX === 0 || clampedX === -maxScroll) {
+          velocity = 0;
+          return;
+        }
+        
+        velocity *= 0.96;
+        
+        if (Math.abs(velocity) > 0.01) {
+          rafId = requestAnimationFrame(momentumLoop);
         }
       }
       
-      animationId = requestAnimationFrame(step);
+      rafId = requestAnimationFrame(momentumLoop);
     }
   }
 })();
