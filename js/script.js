@@ -97,7 +97,10 @@
     let lastX = 0;
     let lastTime = 0;
     let rafId = null;
+    let autoPlayRafId = null;
+    let isAutoPlaying = true;
     const maxScroll = memoriesRow.scrollWidth - memoriesContent.clientWidth;
+    const autoPlaySpeed = 0.3; // pixels per frame
 
     memoriesRow.addEventListener("mousedown", (e) => {
       isDown = true;
@@ -108,6 +111,13 @@
       velocity = 0;
       document.body.style.userSelect = "none";
       document.body.style.webkitUserSelect = "none";
+      
+      // Pause auto-play on user interaction
+      isAutoPlaying = false;
+      if (autoPlayRafId) {
+        cancelAnimationFrame(autoPlayRafId);
+        autoPlayRafId = null;
+      }
       
       if (rafId) {
         cancelAnimationFrame(rafId);
@@ -122,6 +132,12 @@
         document.body.style.userSelect = "";
         document.body.style.webkitUserSelect = "";
         startMomentum();
+        
+        // Resume auto-play after 3 seconds of inactivity
+        setTimeout(() => {
+          isAutoPlaying = true;
+          startContinuousAutoPlay();
+        }, 3000);
       }
     });
 
@@ -173,5 +189,35 @@
       
       rafId = requestAnimationFrame(momentumLoop);
     }
+
+    // Continuous auto-play - smooth marquee effect
+    function startContinuousAutoPlay() {
+      if (!isAutoPlaying) return;
+      
+      function autoPlayLoop() {
+        if (!isAutoPlaying || isDown) return;
+        
+        currentX -= autoPlaySpeed;
+        
+        // Loop back to start when reaching end
+        if (currentX <= -maxScroll) {
+          currentX = 0;
+        }
+        
+        const clampedX = Math.max(-maxScroll, Math.min(0, currentX));
+        memoriesRow.style.transform = `translateX(${clampedX}px)`;
+        
+        autoPlayRafId = requestAnimationFrame(autoPlayLoop);
+      }
+      
+      autoPlayRafId = requestAnimationFrame(autoPlayLoop);
+    }
+
+    // Start auto-play after initial load
+    setTimeout(() => {
+      if (isAutoPlaying) {
+        startContinuousAutoPlay();
+      }
+    }, 2000);
   }
 })();
