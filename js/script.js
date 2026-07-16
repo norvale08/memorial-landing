@@ -33,6 +33,11 @@
   /* ---- GSAP: hero intro ---- */
   if (window.gsap) {
     const gsap = window.gsap;
+    
+    // Register ScrollTrigger plugin
+    if (gsap.ScrollTrigger) {
+      gsap.registerPlugin(ScrollTrigger);
+    }
 
     // Hero entrance timeline
     const heroText = [
@@ -44,6 +49,21 @@
     const tl = gsap.timeline({ defaults: { ease: "power3.out" } });
     tl.from(".hero__media", { autoAlpha: 0, scale: 1.05, duration: 1.6 })
       .from(heroText, { autoAlpha: 0, y: 24, duration: 1, stagger: 0.14 }, "-=1.1");
+
+    // Parallax effect for hero background
+    const heroBg = document.querySelector(".hero__bg");
+    if (heroBg) {
+      gsap.to(heroBg, {
+        y: "20%",
+        ease: "none",
+        scrollTrigger: {
+          trigger: ".hero",
+          start: "top top",
+          end: "bottom top",
+          scrub: true
+        }
+      });
+    }
   }
 
   /* ---- Natural slider for memories ---- */

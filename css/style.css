@@ -125,10 +125,15 @@ h1, h2, h3 { font-family: var(--display); font-weight: 500; margin: 0; }
   grid-template-columns: 55% 1fr;
   height: clamp(420px, 78vh, 720px);
   background: var(--bg);
+  overflow: hidden;
+}
+.hero__bg {
+  position: absolute;
+  inset: 0;
   background-image: url("../images/hero-bg.png");
   background-size: cover;
   background-position: center;
-  overflow: hidden;
+  z-index: 0;
 }
 .hero__media {
   position: relative;
